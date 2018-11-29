@@ -13,7 +13,7 @@ import (
 )
 
 // Query the pg_settings view containing runtime variables
-func querySettings(ch chan<- prometheus.Metric, db *sql.DB) error {
+func querySettings(ch chan<- prometheus.Metric, db *sql.DB, constLabels prometheus.Labels) error {
 	log.Debugln("Querying pg_setting view")
 
 	// pg_settings docs: https://www.postgresql.org/docs/current/static/view-pg-settings.html
@@ -35,6 +35,7 @@ func querySettings(ch chan<- prometheus.Metric, db *sql.DB) error {
 			return errors.New(fmt.Sprintln("Error retrieving rows:", namespace, err))
 		}
 
+		s.constLabels = constLabels
 		ch <- s.metric()
 	}
 
@@ -45,6 +46,7 @@ func querySettings(ch chan<- prometheus.Metric, db *sql.DB) error {
 // pg_settings view.
 type pgSetting struct {
 	name, setting, unit, shortDesc, vartype string
+	constLabels                             prometheus.Labels
 }
 
 func (s *pgSetting) metric() prometheus.Metric {
@@ -78,7 +80,7 @@ func (s *pgSetting) metric() prometheus.Metric {
 		panic(fmt.Sprintf("Unsupported vartype %q", s.vartype))
 	}
 
-	desc := newDesc(subsystem, name, shortDesc)
+	desc := newDesc(subsystem, name, shortDesc, s.constLabels)
 	return prometheus.MustNewConstMetric(desc, prometheus.GaugeValue, val)
 }
 

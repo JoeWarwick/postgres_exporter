@@ -8,6 +8,7 @@ import (
 	. "gopkg.in/check.v1"
 
 	"os"
+	"strings"
 
 	"github.com/blang/semver"
 )
@@ -34,7 +35,7 @@ func (s *FunctionalSuite) TestSemanticVersionColumnDiscard(c *C) {
 
 	{
 		// No metrics should be eliminated
-		resultMap := makeDescMap(semver.MustParse("0.0.1"), testMetricMap)
+		resultMap := makeDescMap(semver.MustParse("0.0.1"), testMetricMap, nil)
 		c.Check(
 			resultMap["test_namespace"].columnMappings["metric_which_stays"].discard,
 			Equals,
@@ -55,7 +56,7 @@ func (s *FunctionalSuite) TestSemanticVersionColumnDiscard(c *C) {
 		testMetricMap["test_namespace"]["metric_which_discards"] = discardableMetric
 
 		// Discard metric should be discarded
-		resultMap := makeDescMap(semver.MustParse("0.0.1"), testMetricMap)
+		resultMap := makeDescMap(semver.MustParse("0.0.1"), testMetricMap, nil)
 		c.Check(
 			resultMap["test_namespace"].columnMappings["metric_which_stays"].discard,
 			Equals,
@@ -76,7 +77,7 @@ func (s *FunctionalSuite) TestSemanticVersionColumnDiscard(c *C) {
 		testMetricMap["test_namespace"]["metric_which_discards"] = discardableMetric
 
 		// Discard metric should be discarded
-		resultMap := makeDescMap(semver.MustParse("0.0.2"), testMetricMap)
+		resultMap := makeDescMap(semver.MustParse("0.0.2"), testMetricMap, nil)
 		c.Check(
 			resultMap["test_namespace"].columnMappings["metric_which_stays"].discard,
 			Equals,
@@ -105,11 +106,41 @@ func (s *FunctionalSuite) TestEnvironmentSettingWithSecretsFiles(c *C) {
 	c.Assert(err, IsNil)
 	defer UnsetEnvironment(c, "DATA_SOURCE_URI")
 
-	var expected = "postgresql://custom_username$&+,%2F%3A;=%3F%40:custom_password$&+,%2F%3A;=%3F%40@localhost:5432/?sslmode=disable"
+	var expected = "postgresql://custom_username$&+%2F%3A;=%3F%40:custom_password$&+%2F%3A;=%3F%40@localhost:5432/?sslmode=disable"
 
-	dsn := getDataSource()
+	dsn := getDataSource()[0]
 	if dsn != expected {
 		c.Errorf("Expected Username to be read from file. Found=%v, expected=%v", dsn, expected)
+	}
+}
+
+// test multiple read username and password from file with lines
+func (s *FunctionalSuite) TestEnvironmentSettingWithMultiSecretsFiles(c *C) {
+
+	err := os.Setenv("DATA_SOURCE_USER_FILE", "./tests/multi_username_file")
+	c.Assert(err, IsNil)
+	defer UnsetEnvironment(c, "DATA_SOURCE_USER_FILE")
+
+	err = os.Setenv("DATA_SOURCE_PASS_FILE", "./tests/multi_userpass_file")
+	c.Assert(err, IsNil)
+	defer UnsetEnvironment(c, "DATA_SOURCE_PASS_FILE")
+
+	err = os.Setenv("DATA_SOURCE_URI", "localhost:5432/?sslmode=disable,localhost:1337/?sslmode=enable,localhost:5651/test,localhost:5432/test?sslmode=disable")
+	c.Assert(err, IsNil)
+	defer UnsetEnvironment(c, "DATA_SOURCE_URI")
+
+	expected := []string{
+		"postgresql://custom_username1%20:custom_password1@localhost:5432/?sslmode=disable",
+		"postgresql://custom_username2:custom_password2@localhost:1337/?sslmode=enable",
+		"postgresql://custom_username3%20:custom_password3@localhost:5651/test",
+		"postgresql://custom_username4:custom_password4@localhost:5432/test?sslmode=disable",
+	}
+
+	multiDsn := getDataSource()
+	for i, dsn := range multiDsn {
+		if dsn != expected[i] {
+			c.Errorf("Expected Username to be read from file. Found=%v, expected=%v", dsn, expected[i])
+		}
 	}
 }
 
@@ -121,9 +152,26 @@ func (s *FunctionalSuite) TestEnvironmentSettingWithDns(c *C) {
 	c.Assert(err, IsNil)
 	defer UnsetEnvironment(c, "DATA_SOURCE_NAME")
 
-	dsn := getDataSource()
+	dsn := getDataSource()[0]
 	if dsn != envDsn {
 		c.Errorf("Expected Username to be read from file. Found=%v, expected=%v", dsn, envDsn)
+	}
+}
+
+// test read multiple DATA_SOURCE_NAME from environment
+func (s *FunctionalSuite) TestEnvironmentSettingWithMultiDns(c *C) {
+
+	envDsn := "postgresql://user:password@localhost:5432/?sslmode=enabled,postgresql://user:password@localhost:5432/?sslmode=enabled"
+	expectedDsn := strings.Split(envDsn, ",")
+	err := os.Setenv("DATA_SOURCE_NAME", envDsn)
+	c.Assert(err, IsNil)
+	defer UnsetEnvironment(c, "DATA_SOURCE_NAME")
+
+	multiDsn := getDataSource()
+	for i, dsn := range multiDsn {
+		if dsn != expectedDsn[i] {
+			c.Errorf("Expected Username to be read from file. Found=%v, expected=%v", dsn, envDsn)
+		}
 	}
 }
 
@@ -143,7 +191,7 @@ func (s *FunctionalSuite) TestEnvironmentSettingWithDnsAndSecrets(c *C) {
 	c.Assert(err, IsNil)
 	defer UnsetEnvironment(c, "DATA_SOURCE_PASS")
 
-	dsn := getDataSource()
+	dsn := getDataSource()[0]
 	if dsn != envDsn {
 		c.Errorf("Expected Username to be read from file. Found=%v, expected=%v", dsn, envDsn)
 	}
