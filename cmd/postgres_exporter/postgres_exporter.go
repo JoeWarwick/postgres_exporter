@@ -929,7 +929,7 @@ func queryNamespaceMappings(ch chan<- prometheus.Metric, db *sql.DB, metricMap m
 	namespaceErrors := make(map[string]error)
 
 	for namespace, mapping := range metricMap {
-		log.Debugln("Querying namespace: ", namespace)
+		log.Debugf("On db %s - Querying namespace: %s", db, namespace)
 		nonFatalErrors, err := queryNamespaceMapping(ch, db, namespace, mapping, queryOverrides, constLabels)
 		// Serious error - a namespace disappeared
 		if err != nil {
@@ -1032,7 +1032,17 @@ func (e *Exporter) getDB(conn string) (*sql.DB, error) {
 		d.SetMaxIdleConns(1)
 		e.dbConnection = d
 		e.dbDsn = e.dsn
-		log.Infoln("Established new database connection.")
+		loggableDsn := "could not parse DATA_SOURCE_NAME"
+		// If the DSN is parseable, log it with a blanked out password
+		pDsn, pErr := url.Parse(e.dsn)
+		if pErr == nil {
+			// Blank user info if not nil
+			if pDsn.User != nil {
+				pDsn.User = url.UserPassword(pDsn.User.Username(), "PASSWORD_REMOVED")
+			}
+			loggableDsn = pDsn.String()
+		}
+		log.Infof("Established new database connection: %s.", loggableDsn)
 	}
 
 	// Always send a ping and possibly invalidate the connection if it fails
