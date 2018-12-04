@@ -1226,7 +1226,6 @@ func main() {
 		convertedConstLabels := newConstLabels(constExporterLabels)
 		log.Infof("Creating exporter: %s", currDsn)
 		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, *queriesPath, convertedConstLabels)
-		exporter.dbConnection = 
 		defer func() {
 			if exporter.dbConnection != nil {
 				exporter.dbConnection.Close() // nolint: errcheck
