@@ -1223,7 +1223,7 @@ func main() {
 			constExporterLabels = *constantLabelsList + "," + constExporterLabels
 		}
 		convertedConstLabels := newConstLabels(constExporterLabels)
-
+		log.Infof("Creating exporter: %s", currDsn)
 		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, *queriesPath, convertedConstLabels)
 		defer func() {
 			if exporter.dbConnection != nil {
