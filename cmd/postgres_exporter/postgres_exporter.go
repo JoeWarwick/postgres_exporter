@@ -849,7 +849,7 @@ func queryNamespaceMapping(ch chan<- prometheus.Metric, db *sql.DB, namespace st
 		rows, err = db.Query(query) // nolint: safesql
 	}
 	if err != nil {
-		return []error{}, errors.New(fmt.Sprintln("Error running query on database: ", namespace, err))
+		return []error{}, errors.New(fmt.Sprintln("Error running query on database: ", db., err))
 	}
 	defer rows.Close() // nolint: errcheck
 
@@ -1015,6 +1015,7 @@ func (e *Exporter) checkMapVersions(ch chan<- prometheus.Metric, db *sql.DB) err
 
 func (e *Exporter) getDB(conn string) (*sql.DB, error) {
 	// Has dsn changed?
+	log.Infof("Old dsn: %s, new dsn: %s, dbConn? %b", e.dsn, e.dbDsn, e.dbConnection != nil)
 	if (e.dbConnection != nil) && (e.dsn != e.dbDsn) {
 		err := e.dbConnection.Close()
 		log.Warnln("Error while closing obsolete DB connection:", err)
@@ -1225,6 +1226,7 @@ func main() {
 		convertedConstLabels := newConstLabels(constExporterLabels)
 		log.Infof("Creating exporter: %s", currDsn)
 		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, *queriesPath, convertedConstLabels)
+		exporter.dbConnection = 
 		defer func() {
 			if exporter.dbConnection != nil {
 				exporter.dbConnection.Close() // nolint: errcheck
