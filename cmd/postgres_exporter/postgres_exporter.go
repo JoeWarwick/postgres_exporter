@@ -929,7 +929,7 @@ func queryNamespaceMappings(ch chan<- prometheus.Metric, db *sql.DB, metricMap m
 	namespaceErrors := make(map[string]error)
 
 	for namespace, mapping := range metricMap {
-		log.Infof("On db %s - Querying namespace: %s", db, namespace)
+		log.Debugf("On db %s - Querying namespace: %s", db, namespace)
 		nonFatalErrors, err := queryNamespaceMapping(ch, db, namespace, mapping, queryOverrides, constLabels)
 		// Serious error - a namespace disappeared
 		if err != nil {
