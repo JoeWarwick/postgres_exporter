@@ -849,7 +849,7 @@ func queryNamespaceMapping(ch chan<- prometheus.Metric, db *sql.DB, namespace st
 		rows, err = db.Query(query) // nolint: safesql
 	}
 	if err != nil {
-		return []error{}, errors.New(fmt.Sprintln("Error running query on database: ", err))
+		return []error{}, errors.New(fmt.Sprintln("Error running query on database: ", db, err))
 	}
 	defer rows.Close() // nolint: errcheck
 
