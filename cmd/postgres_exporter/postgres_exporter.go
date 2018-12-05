@@ -1223,8 +1223,9 @@ func main() {
 			constExporterLabels = *constantLabelsList + "," + constExporterLabels
 		}
 		convertedConstLabels := newConstLabels(constExporterLabels)
+		queryPath := fmt.Sprintf(queriesPath, i)
 		log.Infof("Creating exporter: %s with queries file %i", currDsn, i)
-		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, *queriesPath, convertedConstLabels)
+		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, queryPath, convertedConstLabels)
 		defer func() {
 			if exporter.dbConnection != nil {
 				exporter.dbConnection.Close() // nolint: errcheck
