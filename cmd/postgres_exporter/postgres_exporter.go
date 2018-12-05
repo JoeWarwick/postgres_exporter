@@ -39,7 +39,7 @@ var (
 	disableSettingMetrics = kingpin.Flag("disable-setting-metrics", "Do not include setting metrics.").Default("false").OverrideDefaultFromEnvar("PG_EXPORTER_DISABLE_SETTING_METRICS").Bool()
 	queriesPath           = kingpin.Flag("extend.query-path", "Path to custom queries to run.").Default("").OverrideDefaultFromEnvar("PG_EXPORTER_EXTEND_QUERY_PATH").String()
 	onlyDumpMaps          = kingpin.Flag("dumpmaps", "Do not run, simply dump the maps.").Bool()
-	constantLabelsList    = kingpin.Flag("constantLabels", "A list of label=value separated by comma(,).").Default("").OverrideDefaultFromEnvar("PG_EXPORTER_CONTANT_LABELS").String()
+	constantLabelsList    = kingpin.Flag("constantLabels", "A list of label=value separated by comma(,).").Default("").OverrideDefaultFromEnvar("PG_EXPORTER_CONSTANT_LABELS").String()
 )
 
 // Metric name parts.
@@ -929,7 +929,7 @@ func queryNamespaceMappings(ch chan<- prometheus.Metric, db *sql.DB, metricMap m
 	namespaceErrors := make(map[string]error)
 
 	for namespace, mapping := range metricMap {
-		log.Debugf("On db %s - Querying namespace: %s", db, namespace)
+		log.Infof("On db %s - Querying namespace: %s", db, namespace)
 		nonFatalErrors, err := queryNamespaceMapping(ch, db, namespace, mapping, queryOverrides, constLabels)
 		// Serious error - a namespace disappeared
 		if err != nil {
@@ -1015,7 +1015,6 @@ func (e *Exporter) checkMapVersions(ch chan<- prometheus.Metric, db *sql.DB) err
 
 func (e *Exporter) getDB(conn string) (*sql.DB, error) {
 	// Has dsn changed?
-	log.Infof("Old dsn: %s, new dsn: %s, dbConn? %b", e.dsn, e.dbDsn, e.dbConnection != nil)
 	if (e.dbConnection != nil) && (e.dsn != e.dbDsn) {
 		err := e.dbConnection.Close()
 		log.Warnln("Error while closing obsolete DB connection:", err)
