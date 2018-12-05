@@ -830,8 +830,8 @@ func queryNamespaceMapping(ch chan<- prometheus.Metric, db *sql.DB, namespace st
 	// Check for a query override for this namespace
 	query, found := queryOverrides[namespace]
 
-	// Was this query disabled (i.e. nothing sensible can be queried on cu
-	// version of PostgreSQL?
+	// Was this query disabled (i.e. nothing sensible can be queried on current
+	// version of PostgreSQL?)
 	if query == "" && found {
 		// Return success (no pertinent data)
 		return []error{}, nil
@@ -1223,7 +1223,7 @@ func main() {
 			constExporterLabels = *constantLabelsList + "," + constExporterLabels
 		}
 		convertedConstLabels := newConstLabels(constExporterLabels)
-		log.Infof("Creating exporter: %s", currDsn)
+		log.Infof("Creating exporter: %s with queries file %i", currDsn, i)
 		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, *queriesPath, convertedConstLabels)
 		defer func() {
 			if exporter.dbConnection != nil {
