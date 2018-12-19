@@ -1223,7 +1223,10 @@ func main() {
 			constExporterLabels = *constantLabelsList + "," + constExporterLabels
 		}
 		convertedConstLabels := newConstLabels(constExporterLabels)
-		queryPath := fmt.Sprintf(*queriesPath, i)
+		queryPath := *queriesPath
+		if strings.Contains(queryPath, "%d") {
+			queryPath = fmt.Sprintf(queryPath, i)
+		}
 		log.Infof("Creating exporter: %d with queries file %s", i, queryPath)
 		exporter := NewExporter(currDsn, currDsnDisableDefaultMetrics, currDsnDisableSettingMetrics, queryPath, convertedConstLabels)
 		defer func() {
